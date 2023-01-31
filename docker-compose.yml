@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres:12.10-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=bbmp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    networks:
+      - bbmp
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+
+  bbmp-api:
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    container_name: bbmp-api
+    restart: always
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/bbmp
+    command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 7000 --reload"
+    ports:
+      - '7000:7000'
+    networks:
+      - bbmp
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/app/
+
+networks:
+  bbmp:
+    driver: bridge
+
+volumes:
+  pgdata:
